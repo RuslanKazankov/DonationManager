@@ -1,10 +1,41 @@
-<!DOCTYPE html>
-<html lang="en">
+<html
+        xmlns:th="http://thymeleaf.org"
+        xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+        layout:decorate="~{layout}">
 <head>
-    <meta charset="UTF-8">
-    <title>Authorization</title>
+    <title>Вход</title>
 </head>
-<body>
-    
-</body>
+<section layout:fragment="main">
+    <div class="main">
+        <div class="col-md-6 col-sm-12">
+            <div th:if="${ErrorMessage}" class="alert alert-danger mt-3">
+                <span th:text="${ErrorMessage}"></span>
+            </div>
+            <div class="login-form">
+                <form method="post" th:action="@{/login}">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input
+                                id="username"
+                                type="text"
+                                class="form-control"
+                                placeholder="Username"
+                                name="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input
+                                id="password"
+                                type="password"
+                                class="form-control"
+                                placeholder="Password"
+                                name="password">
+                    </div>
+                    <button type="submit" value="Log in" class="btn btn-secondary">Вход</button>
+                    <a class="btn btn-black" th:href="@{/register}">Регистрация</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
 </html>

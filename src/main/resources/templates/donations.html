@@ -1,0 +1,116 @@
+<html
+        xmlns:th="http://thymeleaf.org"
+        xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+        layout:decorate="~{layout}">
+<head>
+    <title>Донаты</title>
+    <script>
+        function saveNote(donationId) {
+            const noteText = document.getElementById("noteText-".concat(donationId)).value;
+            const username = document.getElementById("username-".concat(donationId)).textContent;
+            const message = document.getElementById("message-".concat(donationId)).textContent;
+            const amount = document.getElementById("amount-".concat(donationId)).textContent;
+            const currency = document.getElementById("currency-".concat(donationId)).textContent;
+            const createdAt = document.getElementById("createdAt-".concat(donationId)).textContent;
+
+            fetch('/saveNote', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({
+                    donationId: donationId,
+                    donationUsername: username,
+                    donationMessage: message,
+                    donationAmount: amount,
+                    donationCurrency: currency,
+                    donationCreatedAt: createdAt,
+                    noteText: noteText
+                })
+            })
+                .then(response => {
+                    if (response.ok)
+                        document.getElementById("removeButton-".concat(donationId)).style.display = 'inline-block';
+                    response.text();
+                })
+                .then(data => {
+
+                })
+                .catch(error => console.error('Error:', error));
+        }
+        function removeNote(donationId) {
+            fetch('/removeNote', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({
+                    donationId: donationId
+                })
+            })
+                .then(response => {
+                    if (response.ok)
+                        document.getElementById("removeButton-".concat(donationId)).style.display = 'none';
+                    response.text();
+                })
+                .then(data => {
+
+                })
+                .catch(error => console.error('Error:', error));
+        }
+    </script>
+</head>
+<section layout:fragment="main">
+    <div class="container">
+        <h1>Donations</h1>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Username</th>
+                <th>Message</th>
+                <th>Amount</th>
+                <th>Currency</th>
+                <th>CreatedAt</th>
+                <th>Note</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="donation, iterStat : ${donations}">
+                <td th:id="'username-' + ${donation.id}" th:text="${donation.username}"></td>
+                <td th:id="'message-' + ${donation.id}" th:text="${donation.message}" width="40%"></td>
+                <td th:id="'amount-' + ${donation.id}" th:text="${donation.amount}"></td>
+                <td th:id="'currency-' + ${donation.id}" th:text="${donation.currency}"></td>
+                <td th:id="'createdAt-' + ${donation.id}" th:text="${donation.created_at}"></td>
+                <td>
+                    <input class="form-control" type="text" th:id="'noteText-' + ${donation.id}" th:value="${notes[iterStat.index] != null} ? ${notes[iterStat.index].text} : ''" placeholder="Оставьте пару слов"/>
+                    <button class="btn btn-success" type="button" th:onclick="'saveNote(' + ${donation.id} + ')'">Сохранить</button>
+                    <button class="btn btn-danger" th:id="'removeButton-' + ${donation.id}" type="button" th:style="${notes[iterStat.index] == null} ? 'display: none;' : 'display: inline-block;'" th:onclick="'removeNote(' + ${donation.id} + ')'">Удалить</button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+
+        <nav>
+            <ul class="pagination">
+                <li class="page-item" th:if="${currentPage != 1}">
+                    <a class="page-link" th:href="@{/donations(page=${currentPage - 1})}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                <li class="page-item" th:each="i : ${#numbers.sequence(1, pageCount)}"
+                    >
+                    <span class="page-link" th:classappend="${i == currentPage} ? 'bg-primary text-white' : ''" th:if="${i == currentPage}" th:text="${i}"></span>
+                    <a class="page-link" th:if="${(i != currentPage) and (i == 1 or i == pageCount or (i >= currentPage - 4 and i <= currentPage + 4))}" th:href="@{/donations(page=${i})}" th:text="${i}"></a>
+                </li>
+                <li class="page-item" th:if="${currentPage != pageCount}">
+                    <a class="page-link" th:href="@{/donations(page=${currentPage + 1})}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+    </div>
+</section>>
+</html>

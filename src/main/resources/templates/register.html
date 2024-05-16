@@ -1,0 +1,50 @@
+<html
+        xmlns:th="http://thymeleaf.org"
+        xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+        layout:decorate="~{layout}">
+<head>
+    <title>Регистрация</title>
+</head>
+<section layout:fragment="main">
+    <div class="main">
+        <div class="col-md-6 col-sm-12">
+            <div class="login-form">
+                <div th:if="${ErrorMessage}" class="alert alert-danger mt-3">
+                    <span th:text="${ErrorMessage}"></span>
+                </div>
+                <form method="post" role="form" th:action="@{/register}" th:object="${user}">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input
+                                type="text"
+                                class="form-control"
+                                placeholder="Username"
+                                th:field="*{username}">
+                    </div>
+                    <p th:if="${#fields.hasErrors('username')}" class="text-danger"></p>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input
+                                type="text"
+                                class="form-control"
+                                placeholder="Email"
+                                th:field="*{email}">
+                    </div>
+                    <p th:if="${#fields.hasErrors('email')}" class="text-danger"></p>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input
+                                type="password"
+                                class="form-control"
+                                placeholder="Password"
+                                th:field="*{password}">
+                    </div>
+                    <p th:if="${#fields.hasErrors('password')}" class="text-danger"></p>
+                    <button th:href="@{/register}" type="submit" class="btn btn-secondary">Регистрация</button>
+                    <a th:href="@{/login}" class="btn btn-black">Вход</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+</html>

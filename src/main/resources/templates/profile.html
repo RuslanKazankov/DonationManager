@@ -1,0 +1,17 @@
+<html
+        xmlns:th="http://thymeleaf.org"
+        xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+        layout:decorate="~{layout}">
+<head>
+    <title>Профиль</title>
+</head>
+<section layout:fragment="main">
+    <div th:if="${daUser}">
+        <h1 th:text="${daUser.name}"></h1>
+        <a href="/dalogout" class="btn btn-danger">Отключить DonationAlerts</a>
+    </div>
+    <div th:unless="${daUser}">
+        <a th:href="${daUrl}" class="btn btn-success">Подключить DonationAlerts</a>
+    </div>
+</section>>
+</html>
