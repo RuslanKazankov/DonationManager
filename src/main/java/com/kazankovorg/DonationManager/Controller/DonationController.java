@@ -1,17 +1,10 @@
 package com.kazankovorg.DonationManager.Controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.kazankovorg.DonationManager.Models.Donation;
 import com.kazankovorg.DonationManager.Models.Note;
 import com.kazankovorg.DonationManager.Models.UserEntity;
-import com.kazankovorg.DonationManager.Service.DonationAlertsService;
-import com.kazankovorg.DonationManager.Service.DonationService;
-import com.kazankovorg.DonationManager.Service.NoteService;
-import com.kazankovorg.DonationManager.Service.UserService;
-import org.json.JSONObject;
+import com.kazankovorg.DonationManager.Service.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -26,11 +19,13 @@ public class DonationController {
     @Autowired
     private DonationAlertsService daService;
     @Autowired
-    private DonationService donationService;
+    private DonaterService donaterService;
     @Autowired
     private UserService userService;
     @Autowired
     private NoteService noteService;
+    @Autowired
+    private CentrifugeService centrifugeService;
 
     @ModelAttribute("user")
     public UserEntity sessionUser(){
@@ -41,6 +36,14 @@ public class DonationController {
     public String daLogin(@RequestParam String code) throws IOException {
         String accessToken = daService.getAccessToken(code);
         userService.setTokenForCurrentUser(accessToken);
+
+        if (userService.getSessionUser().getDatoken() != null)
+            centrifugeService.userSub(
+                    daService.getDaUser(userService.getSessionUser().getDatoken()).getId(),
+                    userService.getSessionUser().getDatoken(),
+                    daService.getDaUser(userService.getSessionUser().getDatoken()).getSocket_connection_token(),
+                    userService.getSessionUser().getId()
+            );
         return "redirect:/profile";
     }
 
@@ -54,16 +57,38 @@ public class DonationController {
 
     @GetMapping("/donations")
     public String donationList(@RequestParam(value = "page", defaultValue = "1") Integer page, Model model){
+        if (sessionUser().getDatoken() == null)
+            return "redirect:/profile";
+        Integer pagesOfDonations = daService.getPagesOfDonations(userService.getSessionUser().getDatoken());
+        if (page < 1 || pagesOfDonations < page)
+            return "redirect:/donations";
         try {
-            List<Donation> donations = daService.getDonations(userService.getSessionUser().getDatoken(), page);
-            model.addAttribute("donations", donations);
             model.addAttribute("currentPage", page);
-            model.addAttribute("pageCount", daService.getPageCount(userService.getSessionUser().getDatoken()));
-            List<Note> notes = new ArrayList<>();
-            for (var donation : donations){
-                notes.add(noteService.getNoteByDonationId(donation.getId()));
+            List<Donation> donations = daService.getDonations(userService.getSessionUser().getDatoken(), page);
+            if(donations.isEmpty()){
+                model.addAttribute("pageCount", 1);
+                return "donations";
             }
-            model.addAttribute("notes", notes);
+            model.addAttribute("donations", donations);
+            model.addAttribute("pageCount", pagesOfDonations);
+            List<Note> notes = noteService.getNotesFromToDonationId(
+                    donations.get(Math.max(donations.size() - 1, 0)).getId(),
+                    donations.get(0).getId());
+            List<Note> releaseNotes = new ArrayList<>();
+            List<String> statuses = new ArrayList<>();
+            //Запросы в цикле, но цикл имеет константную величину
+            for (var donation : donations){
+                if (donation.getMessage() != null && donation.getMessage().length() > 300){
+                    donation.setMessage("Это было тестовое чрезвычайно длинное сообщение.");
+                }
+                Note note = notes.stream()
+                        .filter(n -> n.getDonation().getId() == donation.getId())
+                        .findFirst().orElse(null);
+                releaseNotes.add(note);
+                statuses.add(donaterService.getStatusFromUserIdAndDonaterUsername(sessionUser().getId(), donation.getUsername()));
+            }
+            model.addAttribute("statuses", statuses);
+            model.addAttribute("notes", releaseNotes);
         }
         catch (IOException e){
             model.addAttribute("Error", e.getMessage());

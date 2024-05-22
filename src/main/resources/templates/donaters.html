@@ -1,0 +1,160 @@
+<html
+        xmlns:th="http://thymeleaf.org"
+        xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+        layout:decorate="~{layout}">
+<head>
+    <title>Donaters!</title>
+    <script>
+        function setStatus(donaterId) {
+            const donaterName = document.getElementById("username-".concat(donaterId)).textContent;
+            const statusText = document.getElementById("status-".concat(donaterId)).value;
+            fetch('/setStatus', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({
+                    donaterName: donaterName,
+                    status: statusText
+                })
+            })
+                .then(response => {
+                    response.text();
+                    if (response.ok) {
+                        showTemporaryNotification("Статус обновлён", true);
+                    }else{
+                        showTemporaryNotification("Статус не обновился(((", false);
+                    }
+                })
+                .then(text => {
+                })
+                .catch(error => console.error('Error:', error));
+        }
+        function showTemporaryNotification(message, isSuccess = true, duration = 3000) {
+            // Создаем или находим контейнер для уведомлений
+            let notificationContainer = document.getElementById('notification-container');
+
+            if (!notificationContainer) {
+                notificationContainer = document.createElement('div');
+                notificationContainer.id = 'notification-container';
+                notificationContainer.style.position = 'fixed';
+                notificationContainer.style.top = '70px';
+                notificationContainer.style.right = '20px';
+                notificationContainer.style.zIndex = '1000';
+                notificationContainer.style.display = 'flex';
+                notificationContainer.style.flexDirection = 'column';
+                notificationContainer.style.alignItems = 'flex-end';
+                notificationContainer.style.gap = '10px';
+                document.body.appendChild(notificationContainer);
+            }
+
+            // Создаем элемент для уведомления
+            const notification = document.createElement('div');
+            notification.textContent = message;
+
+            // Стили для уведомления
+            notification.style.padding = '10px 20px';
+            notification.style.color = '#fff';
+            notification.style.borderRadius = '5px';
+            notification.style.boxShadow = '0 2px 5px rgba(0, 0, 0, 0.3)';
+            notification.style.fontFamily = 'Arial, sans-serif';
+            notification.style.opacity = '0';
+            notification.style.transition = 'opacity 0.5s ease';
+
+            // Устанавливаем цвет уведомления в зависимости от параметра isSuccess
+            if (isSuccess) {
+                notification.style.backgroundColor = '#28a745'; // зеленый
+            } else {
+                notification.style.backgroundColor = '#dc3545'; // красный
+            }
+
+            // Добавляем уведомление в контейнер
+            notificationContainer.appendChild(notification);
+
+            // Показываем уведомление с анимацией
+            setTimeout(() => {
+                notification.style.opacity = '1';
+            }, 10);
+
+            // Удаляем уведомление через указанное время с анимацией
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.addEventListener('transitionend', () => {
+                    notification.remove();
+                    // Удаляем контейнер, если в нем больше нет уведомлений
+                    if (notificationContainer.children.length === 0) {
+                        notificationContainer.remove();
+                    }
+                });
+            }, duration);
+        }
+    </script>
+</head>
+<section layout:fragment="main">
+    <div class="container">
+        <div th:if="${Error}" class="alert alert-danger mt-3">
+            <span th:text="${Error}"></span>
+        </div>
+        <a href="https://www.exchangerate-api.com/product/our-exchange-rate-data">Источник конвертации валют</a>
+        <span th:text="'Дата обновления валют: ' + ${currencyDate}"></span>
+        <h1>Donaters</h1>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Username</th>
+                <th>Status</th>
+                <th>
+                    <div class="d-inline-flex">
+                        <span class="me-2">Amount in</span>
+                        <div class="dropdown">
+                            <button th:text="${currentCurrency}" class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                                <li th:each="currency : ${currencies}">
+                                    <a class="btn dropdown-item" th:href="'/donaters?currency=' + ${currency}" th:text="${currency}"></a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </th>
+                <th>Count of donations</th>
+            </tr>
+            </thead>
+            <tbody th:if="${!#arrays.isEmpty(donaters)}">
+            <tr th:each="donater, iterStat : ${donaters}">
+                <td th:text="${iterStat.index + 1}"></td>
+                <td width="22%" th:id="'username-' + ${donater.id}" th:text="${donater.username}"></td>
+                <td width="22%">
+                    <input class="form-control" type="text" th:id="'status-' + ${donater.id}" th:value="${donater.status != null} ? ${donater.status} : ''" placeholder="Опишите донатера"/>
+                    <button class="btn btn-success mt-1 mr-1" type="button" th:onclick="'setStatus(' + ${donater.id} + ')'">Обновить</button>
+                </td>
+                <td width="22%" th:id="'amount-' + ${donater.id}" th:text="${sums[iterStat.index]}"></td>
+                <td width="22%" th:id="'count-' + ${donater.id}" th:text="${counts[iterStat.index]}"></td>
+            </tr>
+            </tbody>
+        </table>
+
+        <nav>
+            <ul class="pagination">
+                <li class="page-item" th:if="${currentPage != 1}">
+                    <a class="page-link" th:href="@{/donaters(page=${currentPage - 1})}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                <li class="page-item" th:each="i : ${#numbers.sequence(1, pageCount)}">
+                    <span class="page-link" th:classappend="${i == currentPage} ? 'bg-primary text-white' : ''" th:if="${i == currentPage}" th:text="${i}"></span>
+                    <a class="page-link" th:if="${(i != currentPage) and (i == 1 or i == pageCount or (i >= currentPage - 4 and i <= currentPage + 4))}" th:href="@{/donaters(page=${i})}" th:text="${i}"></a>
+                </li>
+                <li class="page-item" th:if="${currentPage != pageCount}">
+                    <a class="page-link" th:href="@{/donaters(page=${currentPage + 1})}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+    </div>
+</section>>
+</html>

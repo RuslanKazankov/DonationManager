@@ -14,12 +14,16 @@ import lombok.Setter;
 public class Donation {
     @Id
     private int id;
+    @Column(columnDefinition = "nvarchar(255)")
     private String username;
+    @Column(columnDefinition = "nvarchar(300)")
     private String message;
     private double amount;
     private String currency;
     private String created_at;
     @OneToOne(mappedBy = "donation")
     private Note note;
-
+    @ManyToOne
+    @JoinColumn(name = "donater_id")
+    private Donater donater;
 }

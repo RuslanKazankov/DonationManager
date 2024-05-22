@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 
 @Service
 @Transactional
@@ -27,7 +28,7 @@ public class UserService {
     public boolean registerUser(UserEntity user)
     {
         user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword()));
-        user.setRoles(new HashSet<Role>(Collections.singletonList(roleService.getUserRole())));
+        user.setRoles(new ArrayList<>(Collections.singletonList(roleService.getUserRole())));
         if (userRepository.findByUsername(user.getUsername()) != null)
             return false;
         userRepository.save(user);
@@ -48,5 +49,9 @@ public class UserService {
 
     public void saveUser(UserEntity user) {
         userRepository.save(user);
+    }
+
+    public List<UserEntity> getUsersWithDatoken(){
+        return userRepository.findAllUsersWithDatoken();
     }
 }

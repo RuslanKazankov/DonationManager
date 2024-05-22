@@ -1,13 +1,11 @@
 package com.kazankovorg.DonationManager.Service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kazankovorg.DonationManager.Models.DaUser;
 import com.kazankovorg.DonationManager.Models.Donation;
-import com.kazankovorg.DonationManager.Repository.DonationRepository;
+import com.kazankovorg.DonationManager.SecretConstants;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.NameValuePair;
@@ -21,7 +19,6 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -32,9 +29,9 @@ import java.util.List;
 
 @Service
 public class DonationAlertsService {
-    private final int appId = 12818;
-    private final String apiKey = "USmHK02LlXR7JKNgOpaCLLabQqaj6nZ0CbTAH1v2";
-    private final String redirectUrl = "http://localhost:8080/dalogin";
+    private final int appId = SecretConstants.DonationAlertsAppId;
+    private final String apiKey = SecretConstants.DonationAlertsApiKey;
+    private final String redirectUrl = SecretConstants.DonationAlertsRedirectUrl;
     private final List<String> scopes = Arrays.asList("oauth-user-show", "oauth-donation-subscribe", "oauth-donation-index", "oauth-goal-subscribe", "oauth-poll-subscribe");
 
     private Header getAuthorizationHeader(String token){
@@ -72,12 +69,17 @@ public class DonationAlertsService {
         return accessToken.getString("access_token");
     }
 
+    public List<Donation> getAllDonations(String token) throws IOException {
+        return getDonations(token, 0);
+    }
+
     public List<Donation> getDonations(String token, Integer page) throws IOException {
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpGet donationsRequest = new HttpGet(
-                    new URIBuilder("https://www.donationalerts.com/api/v1/alerts/donations")
-                            .addParameter("page", page.toString())
-                            .build());
+            URIBuilder uri = new URIBuilder("https://www.donationalerts.com/api/v1/alerts/donations");
+            if (page != 0){
+                uri.addParameter("page", page.toString());
+            }
+            HttpGet donationsRequest = new HttpGet(uri.build());
 
             donationsRequest.addHeader(getAuthorizationHeader(token));
             HttpEntity responseEntity = httpClient.execute(donationsRequest).getEntity();
@@ -92,7 +94,7 @@ public class DonationAlertsService {
         }
     }
 
-    public Integer getPageCount(String token){
+    public Integer getPagesOfDonations(String token){
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpGet donationsRequest = new HttpGet(
                     new URIBuilder("https://www.donationalerts.com/api/v1/alerts/donations")
