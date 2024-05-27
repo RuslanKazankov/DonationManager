@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kazankovorg.DonationManager.Models.DaUser;
 import com.kazankovorg.DonationManager.Models.Donation;
-import com.kazankovorg.DonationManager.SecretConstants;
+import com.kazankovorg.DonationManager.Config.SecretConstants;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.NameValuePair;
@@ -69,7 +69,7 @@ public class DonationAlertsService {
         return accessToken.getString("access_token");
     }
 
-    public List<Donation> getAllDonations(String token) throws IOException {
+    public List<Donation> getLastDonations(String token) throws IOException {
         return getDonations(token, 0);
     }
 

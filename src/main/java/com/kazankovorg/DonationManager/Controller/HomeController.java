@@ -8,8 +8,6 @@ import org.springframework.ui.Model;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 public class HomeController {
@@ -25,7 +23,8 @@ public class HomeController {
     }
 
     @GetMapping("/")
-    public String goHome(Model model){
+    public String goHome(){
+
         return "index";
     }
 

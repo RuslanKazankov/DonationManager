@@ -1,5 +1,6 @@
 package com.kazankovorg.DonationManager.Service;
 
+import com.kazankovorg.DonationManager.Config.SecretConstants;
 import com.kazankovorg.DonationManager.Models.Donater;
 import com.kazankovorg.DonationManager.Models.UserEntity;
 import com.kazankovorg.DonationManager.Repository.DonaterRepository;
@@ -14,7 +15,7 @@ import java.util.List;
 
 @Service
 public class DonaterService {
-    private final int limitOnPage = 30;
+    private final int limitOnPage = SecretConstants.LimitElementsOnPage;
     @Autowired
     private DonaterRepository donaterRepository;
     @Autowired
@@ -54,5 +55,15 @@ public class DonaterService {
         donater.setStatus(status);
         donaterRepository.save(donater);
         return true;
+    }
+
+    public Donater getDonaterById(Long donaterId) {
+        return donaterRepository.findById(donaterId).orElse(null);
+    }
+
+    public Donater getDonaterByUserIdAndDonaterName(Long userId, String donaterName){
+        List<Donater> donaters = donaterRepository.findByUserIdAndUsername(userId, donaterName);
+        if (donaters.isEmpty()) return null;
+        return donaters.get(0);
     }
 }

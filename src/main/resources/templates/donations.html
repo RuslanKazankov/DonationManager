@@ -4,7 +4,78 @@
         layout:decorate="~{layout}">
 <head>
     <title>Донаты</title>
+    <script src="https://cdn.jsdelivr.net/sockjs/1.0.3/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
     <script>
+        var stompClient = null;
+
+        function connect() {
+            var socket = new SockJS('/ws');
+            stompClient = Stomp.over(socket);
+            stompClient.connect({}, function (frame) {
+                console.log('Connected: ' + frame);
+                stompClient.subscribe('/topic/donations', function (donation) {
+                    showDonation(JSON.parse(donation.body));
+                });
+            });
+        }
+
+        function showDonation(donation) {
+            var tbody = document.querySelector("table.table tbody");
+            var tr = document.createElement("tr");
+
+            var usernameTd = document.createElement("td");
+            if (donation.donater == null) {
+                usernameTd.innerHTML = `<span id="username-${donation.id}">${donation.username}</span>`;
+            } else {
+                usernameTd.innerHTML = `<a href="/donater/${donation.donater.id}" id="username-${donation.id}">${donation.username}</a>`;
+            }
+            tr.appendChild(usernameTd);
+
+            var statusTd = document.createElement("td");
+            statusTd.innerHTML = `
+                <input class="form-control" type="text" id="status-${donation.id}" placeholder="Опишите донатера"/>
+                <button class="btn btn-success mt-1 mr-1" type="button" onclick="setStatus(${donation.id})">Обновить</button>
+            `;
+            tr.appendChild(statusTd);
+
+            var messageTd = document.createElement("td");
+            messageTd.id = `message-${donation.id}`;
+            messageTd.textContent = donation.message;
+            tr.appendChild(messageTd);
+
+            var amountTd = document.createElement("td");
+            amountTd.id = `amount-${donation.id}`;
+            amountTd.textContent = donation.amount;
+            tr.appendChild(amountTd);
+
+            var currencyTd = document.createElement("td");
+            currencyTd.id = `currency-${donation.id}`;
+            currencyTd.textContent = donation.currency;
+            tr.appendChild(currencyTd);
+
+            var createdAtTd = document.createElement("td");
+            createdAtTd.id = `createdAt-${donation.id}`;
+            createdAtTd.textContent = donation.createdAt;
+            tr.appendChild(createdAtTd);
+
+            var noteTd = document.createElement("td");
+            noteTd.innerHTML = `
+                <input class="form-control" type="text" id="noteText-${donation.id}" placeholder="Оставьте пару слов"/>
+                <button class="btn btn-success mt-1 mr-1" type="button" onclick="saveNote(${donation.id})">Сохранить</button>
+                <button class="btn btn-danger mt-1" id="removeButton-${donation.id}" type="button" style="display: none;" onclick="removeNote(${donation.id})">Удалить</button>
+            `;
+            tr.appendChild(noteTd);
+
+            // Добавляем новую строку в начало таблицы
+            tbody.insertBefore(tr, tbody.firstChild);
+        }
+
+        window.onload = function() {
+            connect();
+        };
+
+
          function saveNote(donationId) {
             const noteText = document.getElementById("noteText-".concat(donationId)).value;
             const username = document.getElementById("username-".concat(donationId)).textContent;
@@ -164,7 +235,10 @@
             </thead>
             <tbody>
             <tr th:each="donation, iterStat : ${donations}">
-                <td th:id="'username-' + ${donation.id}" th:text="${donation.username}"></td>
+                <td>
+                    <span th:if="${donation.donater} == null" th:id="'username-' + ${donation.id}" th:text="${donation.username}"></span>
+                    <a th:if="${donation.donater} != null" th:href="'/donater/' + ${donation.donater.id}" th:id="'username-' + ${donation.id}" th:text="${donation.username}"></a>
+                </td>
                 <td>
                     <input class="form-control" type="text" th:id="'status-' + ${donation.id}" th:value="${statuses[iterStat.index] != null} ? ${statuses[iterStat.index]} : ''" placeholder="Опишите донатера"/>
                     <button class="btn btn-success mt-1 mr-1" type="button" th:onclick="'setStatus(' + ${donation.id} + ')'">Обновить</button>

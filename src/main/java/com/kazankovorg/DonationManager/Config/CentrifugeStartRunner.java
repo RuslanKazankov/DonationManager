@@ -1,10 +1,9 @@
-package com.kazankovorg.DonationManager;
+package com.kazankovorg.DonationManager.Config;
 
 import com.kazankovorg.DonationManager.Models.DaUser;
 import com.kazankovorg.DonationManager.Models.UserEntity;
 import com.kazankovorg.DonationManager.Service.CentrifugeService;
 import com.kazankovorg.DonationManager.Service.DonationAlertsService;
-import com.kazankovorg.DonationManager.Service.DonationService;
 import com.kazankovorg.DonationManager.Service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;

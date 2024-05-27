@@ -1,6 +1,9 @@
 package com.kazankovorg.DonationManager.Controller;
 
+import com.kazankovorg.DonationManager.Exceptions.DonaterNotFoundException;
 import com.kazankovorg.DonationManager.Models.Donater;
+import com.kazankovorg.DonationManager.Models.Donation;
+import com.kazankovorg.DonationManager.Models.Note;
 import com.kazankovorg.DonationManager.Models.UserEntity;
 import com.kazankovorg.DonationManager.Service.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.data.domain.Page;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -25,6 +30,8 @@ public class DonatersController {
     private DonationService donationService;
     @Autowired
     private DonaterService donaterService;
+    @Autowired
+    private NoteService noteService;
 
     @ModelAttribute("user")
     public UserEntity sessionUser(){
@@ -90,5 +97,38 @@ public class DonatersController {
             return new ResponseEntity<>("The status is set", HttpStatus.OK);
 
         return new ResponseEntity<>("The status is not set", HttpStatus.BAD_REQUEST);
+    }
+
+    @GetMapping("/donater/{donaterId}")
+    public String getDonaterProfile(@PathVariable("donaterId") Long donaterId,
+                                    @RequestParam(defaultValue = "1") Integer page,
+                                    Model model){
+        Donater donater = donaterService.getDonaterById(donaterId);
+        if(donater == null)
+            throw new DonaterNotFoundException("Donater with id " + donaterId + " not found");
+
+        Page<Donation> donations = donationService.getDonationListByDonaterId(donaterId, page - 1);
+        if (donations.getTotalPages() < page && donations.getTotalPages() != 0){
+            return "redirect:/donater/".concat(donaterId.toString());
+        }
+        List<Note> notes = new ArrayList<>();
+        for(var donation : donations.getContent()){
+            Note note = noteService.getNoteByDonationId(donation.getId());
+            notes.add(note);
+        }
+
+        model.addAttribute("donations", donations.getContent());
+        model.addAttribute("notes", notes);
+        model.addAttribute("donater", donater);
+        model.addAttribute("currentPage", page);
+        model.addAttribute("pageCount", Math.max(donations.getTotalPages(), 1));
+        return "donater";
+    }
+
+    @ExceptionHandler(DonaterNotFoundException.class)
+    public ModelAndView handleDonaterNotFoundException(DonaterNotFoundException ex) {
+        ModelAndView modelAndView = new ModelAndView("error-page"); // Имя вашей страницы ошибки
+        modelAndView.addObject("errorMessage", ex.getMessage());
+        return modelAndView;
     }
 }

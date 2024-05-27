@@ -1,4 +1,4 @@
-package com.kazankovorg.DonationManager;
+package com.kazankovorg.DonationManager.Config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

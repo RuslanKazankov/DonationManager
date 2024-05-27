@@ -1,0 +1,21 @@
+<html
+        xmlns:th="http://thymeleaf.org"
+        xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+        layout:decorate="~{layout}">
+<head>
+    <title>Одна ошибка и ты ошибся</title>
+</head>
+<section layout:fragment="main">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <h1 class="text-danger">Ошибка</h1>
+                <p class="lead">
+                    <span class="text-danger" th:text="${errorMessage}"></span>
+                </p>
+                <a class="btn btn-primary" href="/">На главную</a>
+            </div>
+        </div>
+    </div>
+</section>>
+</html>

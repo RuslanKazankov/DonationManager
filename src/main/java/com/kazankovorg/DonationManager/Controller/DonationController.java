@@ -1,10 +1,13 @@
 package com.kazankovorg.DonationManager.Controller;
 
+import com.kazankovorg.DonationManager.Models.Donater;
 import com.kazankovorg.DonationManager.Models.Donation;
 import com.kazankovorg.DonationManager.Models.Note;
 import com.kazankovorg.DonationManager.Models.UserEntity;
 import com.kazankovorg.DonationManager.Service.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +29,8 @@ public class DonationController {
     private NoteService noteService;
     @Autowired
     private CentrifugeService centrifugeService;
+    @Autowired
+    private DonationService donationService;
 
     @ModelAttribute("user")
     public UserEntity sessionUser(){
@@ -37,13 +42,19 @@ public class DonationController {
         String accessToken = daService.getAccessToken(code);
         userService.setTokenForCurrentUser(accessToken);
 
-        if (userService.getSessionUser().getDatoken() != null)
+        if (userService.getSessionUser().getDatoken() != null){
             centrifugeService.userSub(
                     daService.getDaUser(userService.getSessionUser().getDatoken()).getId(),
                     userService.getSessionUser().getDatoken(),
                     daService.getDaUser(userService.getSessionUser().getDatoken()).getSocket_connection_token(),
                     userService.getSessionUser().getId()
             );
+
+            List<Donation> donations = daService.getLastDonations(sessionUser().getDatoken());
+            for (var donation : donations){
+                donationService.addDonation(sessionUser().getId(), donation.getUsername(), donation);
+            }
+        }
         return "redirect:/profile";
     }
 
@@ -76,7 +87,7 @@ public class DonationController {
                     donations.get(0).getId());
             List<Note> releaseNotes = new ArrayList<>();
             List<String> statuses = new ArrayList<>();
-            //Запросы в цикле, но цикл имеет константную величину
+            //Запросы в цикле, но цикл имеет константную незначительную величину. C * n = n
             for (var donation : donations){
                 if (donation.getMessage() != null && donation.getMessage().length() > 300){
                     donation.setMessage("Это было тестовое чрезвычайно длинное сообщение.");
@@ -85,7 +96,13 @@ public class DonationController {
                         .filter(n -> n.getDonation().getId() == donation.getId())
                         .findFirst().orElse(null);
                 releaseNotes.add(note);
-                statuses.add(donaterService.getStatusFromUserIdAndDonaterUsername(sessionUser().getId(), donation.getUsername()));
+
+                //Todo: statuses можно удалить, так как устанавливается донатер для доната, но тогда нужно изменить данные на форме.
+                Donater donater = donaterService.getDonaterByUserIdAndDonaterName(sessionUser().getId(), donation.getUsername());
+                if (donater != null)
+                    statuses.add(donater.getStatus());
+                else statuses.add(null);
+                donation.setDonater(donater);
             }
             model.addAttribute("statuses", statuses);
             model.addAttribute("notes", releaseNotes);
@@ -96,4 +113,9 @@ public class DonationController {
         return "donations";
     }
 
+    @MessageMapping("/donation")
+    @SendTo("/topic/donations")
+    public Donation send(Donation donation) {
+        return donation;
+    }
 }
